@@ -36,6 +36,8 @@ class LoginController extends Controller
 
                 return response()->json($data, 400);
             }
+            $userDetails->device_token = $request->device_token;
+            $userDetails->update();
 
                 $previousAccessToken = Apitoken::where('tokenable_id', $userDetails->id)->first();
                 if ($previousAccessToken != "") {
@@ -130,7 +132,7 @@ class LoginController extends Controller
                 return response()->json($data, 400);
             }
            } catch (Exception $e) {
-
+               dd($e);
             Log::info("Login API OTP Verify Error: " . $e->getMessage());
            }
     }

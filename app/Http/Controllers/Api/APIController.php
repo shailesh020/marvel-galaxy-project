@@ -126,6 +126,8 @@ class APIController extends Controller
             $dataProfile['id'] = $userIds->id;
             $dataProfile['name'] = $userIds->name;
             $dataProfile['phone_no'] = $userIds->phone_no;
+            $dataProfile['dob'] = $userIds->dob;
+            $dataProfile['alternet_phone_no'] = $userIds->alternet_phone_no;
             $dataProfile['profile'] = asset('file/profile/' . $userIds->profile);
 
             $datas = [

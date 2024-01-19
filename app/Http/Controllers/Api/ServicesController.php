@@ -12,6 +12,8 @@ use App\Http\Helpers\custHelpers;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Models\OTPModel;
+use App\Models\User;
 
 class ServicesController extends Controller
 {
@@ -298,7 +300,7 @@ class ServicesController extends Controller
     public function completeService(Request $request,$services_id)
     {
           try{
-            dd($services_id);
+            
             $serviceData = Services::where('id',$services_id)->first();
             if(empty($serviceData))
             {
@@ -313,7 +315,15 @@ class ServicesController extends Controller
             $serviceData->end_date = date('Y-m-d');
             $serviceData->update();
 
-            // $data =  $this->Notification($userDetails->id,$userDetails->id,'Complete Service Successfully','1234','');
+            $userDetails = auth()->user();
+            $otpData = random_int(1000, 9999);
+            $otp = new OTPModel;
+            $otp->user_id = $userDetails->id;
+            $otp->otp = $otpData;
+            $otp->status = '0';
+            $otp->save();
+
+            $data =  $this->Notification($userDetails->id,'Complete Service Successfully',$otpData);
             $data = [
                 'status'  => 200,
                 'message' => "Complete Service Successfully",
@@ -325,27 +335,92 @@ class ServicesController extends Controller
         }
     }
 
-    public function Notification($firebaseToken,$title,$description,$redirection)
+
+    public function Notification($user_id,$title,$description)
     {
 
-        $SERVER_API_KEY = 'AAAAGvgGk6w:APA91bE7laIe_PzQt0q5QNNDIvP0CML7SCK0WFILNkAtGTnsAklcVZ9dHgpyXlFAjWVe8694-_9WR0Wr08TcsarQf0WIqGc-d5frtweUqO3KwhICIw78noUIiu2GlXUFLll_C_Ipiel9';
-            $data = [
-                "registration_ids" => $firebaseToken,
-                "notification" => [
-                    "title" => $title,
-                    "body" => $description,
-                    "sound" => 'default',
-                    "click_action"=> '',
-                ],
-                "data" => $redirection,
+        try{
+                $firebaseToken = User::where('id',$user_id)->whereNotNull('device_token')->pluck('device_token')->first();
+                $url = 'https://fcm.googleapis.com/fcm/send';
+               
+                $SERVER_API_KEY = 'AAAAGvgGk6w:APA91bE7laIe_PzQt0q5QNNDIvP0CML7SCK0WFILNkAtGTnsAklcVZ9dHgpyXlFAjWVe8694-_9WR0Wr08TcsarQf0WIqGc-d5frtweUqO3KwhICIw78noUIiu2GlXUFLll_C_Ipiel9';
+            
+                    $data = [
+                        "registration_ids" => $firebaseToken,
+                        "notification" => [
+                            "title" => $title,
+                            "body" => $description,  
+                        ]
+                    ];
+                    $encodedData = json_encode($data);
+                
+                    $headers = [
+                        'Authorization:key=' . $SERVER_API_KEY,
+                        'Content-Type: application/json',
+                    ];
+                
+                    $ch = curl_init();
+                
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_POST, true);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+                    curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+                  
+                    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);        
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $encodedData);
+                    // Execute post
+                    $result = curl_exec($ch);
+                    if ($result === FALSE) {
+                        die('Curl failed: ' . curl_error($ch));
+                    }        
+                    // Close connection
+                    curl_close($ch);
+                    // FCM response
+                    $response = json_decode($result);
+                     
+                    return 0;
+        } catch (Exception $e) {
+            Log::info("Complete Service API Error: " . $e->getMessage());
+        }    
+    }
+
+    //this fucntion use otp verify
+    public function OTPVerify(Request $request)
+    {
+        try{
+            $validator = Validator::make($request->all(), [
+                'otp' => 'required',
+            ]);
+
+            // Check if validation fails
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 400);
+            }
+
+            $userDetails = auth()->user();
+          $OTPVerify =  OTPModel::where('user_id',$userDetails->id)->where('otp',$request->otp)->first();
+          if(empty($OTPVerify))
+          {
+            $datas = [
+                'status'  => 400,
+                'message' => "OTP Not Valid",
             ];
 
-            $dataString = json_encode($data);
-            $headers = [
-                'Authorization: key=' . $SERVER_API_KEY,
-                'Content-Type: application/json',
-            ];
-            $url = 'https://fcm.googleapis.com/fcm/send';
-            $response = Http::withHeaders($headers)->withToken($SERVER_API_KEY)->post($url, $data);
+            return response()->json($datas, 400);
+          }
+
+          $data = [
+            'status'  => 200,
+            'message' => "OTP Verify Successfully",
+            'data'    =>[],
+        ];
+        return response()->json($data, 200);
+        } catch (Exception $e) {
+            Log::info("OTP Verify API Error: " . $e->getMessage());
+        }    
     }
+
+
 }

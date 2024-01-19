@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ClientController;
 use App\Http\Controllers\Api\ServicesController;
 use App\Http\Controllers\Api\FeedBackController;
+use App\Http\Controllers\Api\MachinesConrtoller;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -47,7 +48,10 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::get('complete-service',[ServicesController::class,'completeServiceList']);
     Route::get('client/{client_id}/machine',[APIController::class,'clientMachine']);
 
-
+    Route::post('otp-verify',[ServicesController::class,'OTPVerify']);
+    Route::get('machin-list',[MachinesConrtoller::class,'machinList']);
+    Route::post('machin-details',[MachinesConrtoller::class,'machineDetails']);
+    Route::post('machin-edit',[MachinesConrtoller::class,'machinEdit']);
     //feed back 
     Route::post('feed-back',[FeedBackController::class,'feedBack']);
 });
