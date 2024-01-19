@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateOtpTable extends Migration
+class AddMachineAddressToPurchaseHistories extends Migration
 {
     /**
      * Run the migrations.
@@ -13,12 +13,8 @@ class CreateOtpTable extends Migration
      */
     public function up()
     {
-        Schema::create('otp', function (Blueprint $table) {
-            $table->id();
-            $table->string('user_id');
-            $table->string('otp');
-            $table->string('status');
-            $table->timestamps();
+        Schema::table('purchase_histories', function (Blueprint $table) {
+            $table->string('machine_address')->nullable();
         });
     }
 
@@ -29,6 +25,8 @@ class CreateOtpTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('otp');
+        Schema::table('purchase_histories', function (Blueprint $table) {
+            //
+        });
     }
 }
